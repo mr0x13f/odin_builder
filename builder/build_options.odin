@@ -18,7 +18,7 @@ Build_Options :: struct {
     // 	-custom-attribute:my_tag
     // 	-custom-attribute:my_tag,the_other_thing
     // 	-custom-attribute:my_tag -custom-attribute:the_other_thing
-    custom_attribute: string,
+    custom_attributes: []string `flag:"custom-attribute"`,
 
     // Enables debug information, and defines the global constant ODIN_DEBUG to be 'true'.
     debug: bool,
@@ -149,7 +149,7 @@ Build_Options :: struct {
 
     // Sets the optimization mode for compilation.
     // The default is -o:minimal.
-    optimization: Build_Optimization_Options `flag:"-o"`,
+    optimization: Build_Optimization_Options `flag:"o"`,
 
     // Processes the file and procedure strings, and line and column numbers, stored with a 'runtime.Source_Code_Location' value.
     // The default is -source-code-locations:normal.
@@ -206,7 +206,7 @@ Build_Options :: struct {
     // 	-target-features:atomics
     // 	-target-features:"sse2,aes"
     // 	-target-features:"?" for a list
-    target_features: string,
+    target_features: []string,
 
     // Sets the target for the executable to be built in.
     target: string,

@@ -16,7 +16,13 @@ import "core:os/os2"
 
 
 rename_flags := map[string]string {
-    "o" = "optimization",
+    "o"                = "optimization",
+    "custom_attribute" = "custom_attributes",
+}
+
+replace_flag_type := map[string]string {
+    "custom_attribute" = "[]string",
+    "target_features"  = "[]string",
 }
 
 exclude_flags := map[string]bool {
@@ -54,22 +60,16 @@ main :: proc() {
         line := consume_line()
         defer skip_lines_until_prefix("\t-")
 
-        colon_idx := strings.index(line, ":")
         // Name
-        flag_name := strings.trim_left_space(line)
+        flag_name := strings.trim_left_space(line)[1:]
+        colon_idx := strings.index(flag_name, ":")
         flag_type := ""
         if colon_idx != -1 {
-            flag_name = flag_name[:colon_idx-1]
-            flag_type = line[colon_idx+1:]
+            flag_type = flag_name[colon_idx+1:]
+            flag_name = flag_name[:colon_idx]
         }
-        field_name := strings.to_snake_case(flag_name[1:], context.temp_allocator)
-        custom_field_name := false;
-
-        if field_name in exclude_flags { continue }
-        if field_name in rename_flags {
-            custom_field_name = true
-            field_name = rename_flags[field_name]
-        }
+        field_name := strings.to_snake_case(flag_name, context.temp_allocator)
+        custom_field_name := false
 
         // Type
         field_type: string
@@ -88,6 +88,14 @@ main :: proc() {
             case "<name>=<value>": fallthrough
             case "<name>=<filepath>":
                 field_type = "map[string]string"
+        }
+
+        if field_name in exclude_flags { continue }
+        if field_name in replace_flag_type {
+            field_type = replace_flag_type[field_name] }
+        if field_name in rename_flags {
+            custom_field_name = true
+            field_name = rename_flags[field_name]
         }
 
         // Write comments
@@ -113,8 +121,8 @@ main :: proc() {
                     continue
                 }
                 option_name_kebab := strings.trim_left_space(option_line)
-                if strings.has_prefix(option_name_kebab, flag_name) {
-                    option_name_kebab = option_name_kebab[len(flag_name)+1:]
+                if option_name_kebab[0] == '-' && strings.has_prefix(option_name_kebab[1:], flag_name) {
+                    option_name_kebab = option_name_kebab[len(flag_name)+2:]
                 }
                 if strings.has_prefix(option_name_kebab, "default") { continue } // Already added as nil option
                 first_space := strings.index(option_name_kebab, " ")
