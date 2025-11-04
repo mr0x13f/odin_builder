@@ -41,45 +41,57 @@ main :: proc() {
         error("Wrong number of build modes, expected 'debug' OR 'release'") }
 
     // Info
-    app_name := "hellope"
+    app_name      := "hellope"
     odin_main_pkg := "hellope"
     odin_main_dir := "src"
-    build_dir := "build"
+    build_dir     := "build"
 
     // Prepare Build
     build_mode := debug ? "debug" : release ? "release" : ""
-    build_name := fmt.aprintf("%s %s", strings.to_pascal_case(platform), strings.to_pascal_case(build_mode))
+    build_name := fmt.aprintf("%s %s", strings.to_pascal_case(PLATFORM), strings.to_pascal_case(build_mode))
     fmt.printfln("[%s build]", build_name)
     out_dir := filepath.join({ build_dir, build_mode })
     
     // Build flags
-    odin_flags := make([dynamic]string)
     odin_out: string
+    build_options: Build_Options
 
     if debug {
-        odin_out = filepath.join({ out_dir, fmt.aprintf("%s_%s_%s%s", app_name, platform, build_mode, exe_ext) })
-        append(&odin_flags, "-debug", "-o:minimal")
-        if windows { append(&odin_flags, "-subsystem:console", "-linker:radlink") } 
+        odin_out = filepath.join({ out_dir, fmt.aprintf("%s_%s_%s", app_name, platform, build_mode) })
+        build_options.debug = true
+        build_options.optimization = .Minimal
+        if WINDOWS {
+            build_options.subsystem = .Console
+            build_options.linker = .Radlink
+        } 
     }
     if release {
-        odin_out = filepath.join({ out_dir, fmt.aprintf("%s%s", app_name, exe_ext) })
-        append(&odin_flags, "-disable-assert", "-o:speed")
-        if windows { append(&odin_flags, "-subsystem:windows") }
+        odin_out = filepath.join({ out_dir, app_name })
+        build_options.disable_assert = true
+        build_options.optimization = .Speed
+        if WINDOWS { build_options.subsystem = .Windows }
     }
 
-    if !novet { append(&odin_flags, "-vet-cast", "-vet-semicolon", "-vet-shadowing", "-vet-style", "-vet-unused-imports", "-vet-unused-variables", "-vet-using-param", "-vet-using-stmt") }
-    if vet    { append(&odin_flags, "-vet-unused-procedures") }
-    if asan   { append(&odin_flags, "-sanitize:address") }
+    if asan { build_options.sanitize = .Address }
+    if vet  { build_options.vet_unused_procedures = true }
+    if !novet {
+        build_options.vet_cast = true
+        build_options.vet_semicolon = true
+        build_options.vet_shadowing = true
+        build_options.vet_style = true
+        build_options.vet_unused_imports = true
+        build_options.vet_unused_variables = true
+        build_options.vet_using_param = true
+        build_options.vet_using_stmt = true
+    }
 
-    append(&odin_flags, fmt.aprintf("-vet-packages:%s", odin_main_pkg))
-    append(&odin_flags, fmt.aprintf("-out:%s", odin_out))
+    build_options.vet_packages = { odin_main_pkg }
 
     // Compile
     for watch_dir(watch, odin_main_dir) {
         
-        fmt.printfln("Compiling %s...", app_name)
-        mkdir(out_dir)
-        build_success := call({ "odin", "build", odin_main_dir }, odin_flags[:] )
+        fmt.printfln("Building %s...", app_name)
+        build_success := build(odin_main_dir, odin_out, .Executable, build_options)
 
         if build_success {
             fmt.printfln(FG_GREEN + "%s build created in " + FG_CYAN + "%s" + os2.Path_Separator_String + RESET, build_name, out_dir)

@@ -36,6 +36,34 @@ platform: string
 exe_ext: string
 // Extension for shared/dynamic libraries on this platform
 dll_ext: string
+// Extension for static libraries on this platform
+lib_ext: string
+// Extension for object files on this platform
+obj_ext: string
+
+WINDOWS :: ODIN_OS == .Windows
+LINUX   :: ODIN_OS == .Linux
+MACOS   :: ODIN_OS == .Darwin
+
+when WINDOWS {
+    PLATFORM :: "windows"
+    EXE_EXT :: ".exe"
+    DLL_EXT :: ".dll"
+    LIB_EXT :: ".lib"
+    OBJ_EXT :: ".obj"
+} else {
+    when LINUX {
+        PLATFORM :: "linux"
+        DLL_EXT :: ".so"
+    }
+    when MACOS {
+        PLATFORM :: "macos"
+        DLL_EXT :: ".dylib"
+    }
+    EXE_EXT :: ""
+    LIB_EXT :: ".a"
+    OBJ_EXT :: ".o"
+}
 
 // Uses the command line arguments to set the value of the fields in the supplied struct by their field names.
 // Also sets the working directory to the location of the calling file.
@@ -45,13 +73,6 @@ read_args :: proc(args: ^$T, check_args := true, caller_loc := #caller_location)
     // cwd
     cwd = filepath.dir(caller_loc.file_path)
     os2.set_working_directory(cwd)
-    // platform
-    windows = ODIN_OS == .Windows
-    linux   = ODIN_OS == .Linux
-    macos   = ODIN_OS == .Darwin
-    platform = "macos" if macos else strings.to_lower(reflect.enum_string(ODIN_OS))
-    exe_ext = windows ? ".exe" : ""
-    dll_ext = windows ? ".dll" : linux ? ".so" : macos ? ".dylib" : ""
     // args
     // TODO: strip arg prefixes like '-', '--', '/',
     // TODO: consider using core:flags
@@ -155,12 +176,6 @@ mkdir :: proc(parts: ..string) {
 
 // Create a child process and wait for it to complete. Its stdout and stderr are forwarded to the console.
 call :: proc(command: ..[]string, environment: []string = nil) -> (success: bool) {
-    env := environment
-    if env != nil {
-        err: os2.Error
-        env, err = os2.environ(context.temp_allocator)
-        if err != nil { error("Error while getting environment variables: %s", os2.error_string(err)) }
-    }
 
     command_parts := slice.concatenate(command, context.temp_allocator)
     executable := command[0][0]
@@ -168,7 +183,7 @@ call :: proc(command: ..[]string, environment: []string = nil) -> (success: bool
     process, err := os2.process_start({
         command     = command_parts,
         working_dir = cwd,
-        env         = env,
+        env         = environment,
         stderr      = os2.stderr,
         stdout      = os2.stdout,
         stdin       = nil,
