@@ -57,7 +57,7 @@ main :: proc() {
     build_options: Build_Options
 
     if debug {
-        odin_out = filepath.join({ out_dir, fmt.aprintf("%s_%s_%s", app_name, platform, build_mode) })
+        odin_out = filepath.join({ out_dir, fmt.aprintf("%s_%s_%s", app_name, PLATFORM, build_mode) })
         build_options.debug = true
         build_options.optimization = .Minimal
         if WINDOWS {

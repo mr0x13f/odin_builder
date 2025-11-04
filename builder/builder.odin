@@ -5,7 +5,6 @@ import "core:terminal/ansi"
 import "core:slice"
 import "core:reflect"
 import "core:fmt"
-import "core:strings"
 import "core:os/os2"
 import "core:path/filepath"
 
@@ -18,28 +17,6 @@ FG_BLUE    :: ansi.CSI + ansi.FG_BLUE    + ansi.SGR
 FG_MAGENTA :: ansi.CSI + ansi.FG_MAGENTA + ansi.SGR
 FG_CYAN    :: ansi.CSI + ansi.FG_CYAN    + ansi.SGR
 FG_WHITE   :: ansi.CSI + ansi.FG_WHITE   + ansi.SGR
-
-// Whether the current platform is Windows
-windows: bool
-// Whether the current platform is Linux
-linux:   bool
-// Whether the current platform is macOS (Darwin)
-macos:   bool
-
-// Working directory, same as the directory of the build script
-cwd: string
-// Command line arguments without prefix (-, --, /)
-cli_args: []string
-// Name of the current platform: `"windows"` or `"linux"` or `"macos"`
-platform: string
-// Extension for executables on this platform
-exe_ext: string
-// Extension for shared/dynamic libraries on this platform
-dll_ext: string
-// Extension for static libraries on this platform
-lib_ext: string
-// Extension for object files on this platform
-obj_ext: string
 
 WINDOWS :: ODIN_OS == .Windows
 LINUX   :: ODIN_OS == .Linux
@@ -64,6 +41,12 @@ when WINDOWS {
     LIB_EXT :: ".a"
     OBJ_EXT :: ".o"
 }
+
+// Working directory, same as the directory of the build script
+cwd: string
+// Command line arguments without prefix (-, --, /)
+cli_args: []string
+// Name of the current platform: `"windows"` or `"linux"` or `"macos"`
 
 // Uses the command line arguments to set the value of the fields in the supplied struct by their field names.
 // Also sets the working directory to the location of the calling file.
