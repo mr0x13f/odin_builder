@@ -50,7 +50,6 @@ main :: proc() {
     build_mode := debug ? "debug" : release ? "release" : ""
     build_name := fmt.aprintf("%s %s", strings.to_pascal_case(platform), strings.to_pascal_case(build_mode))
     fmt.printfln("[%s build]", build_name)
-    exe_ext := windows ? ".exe" : ""
     out_dir := filepath.join({ build_dir, build_mode })
     
     // Build flags

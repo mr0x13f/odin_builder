@@ -50,8 +50,8 @@ read_args :: proc(args: ^$T, check_args := true, caller_loc := #caller_location)
     linux   = ODIN_OS == .Linux
     macos   = ODIN_OS == .Darwin
     platform = "macos" if macos else strings.to_lower(reflect.enum_string(ODIN_OS))
-    exe_ext := windows ? ".exe" : ""
-    dll_ext := windows ? ".dll" : linux ? ".so" : macos ? ".dylib" : ""
+    exe_ext = windows ? ".exe" : ""
+    dll_ext = windows ? ".dll" : linux ? ".so" : macos ? ".dylib" : ""
     // args
     // TODO: strip arg prefixes like '-', '--', '/',
     // TODO: consider using core:flags
