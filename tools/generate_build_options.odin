@@ -18,6 +18,7 @@ import "core:os/os2"
 rename_flags := map[string]string {
     "o"                = "optimization",
     "custom_attribute" = "custom_attributes",
+    "collection"       = "collections",
 }
 
 replace_flag_type := map[string]string {

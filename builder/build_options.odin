@@ -10,7 +10,7 @@ Build_Options :: struct {
     // Example: -collection:shared=dir/to/shared
     // Usage in Code:
     // 	import "shared:foo"
-    collection: map[string]string,
+    collections: map[string]string `flag:"collection"`,
 
     // Add a custom attribute which will be ignored if it is unknown.
     // This can be used with metaprogramming tools.
