@@ -32,11 +32,16 @@ cwd: string
 cli_args: []string
 // Name of the current platform: `"windows"` or `"linux"` or `"macos"`
 platform: string
+// Extension for executables on this platform
+exe_ext: string
+// Extension for shared/dynamic libraries on this platform
+dll_ext: string
 
 // Uses the command line arguments to set the value of the fields in the supplied struct by their field names.
 // Also sets the working directory to the location of the calling file.
 // Also sets other global fields in the `builder` package.
 read_args :: proc(args: ^$T, check_args := true, caller_loc := #caller_location) {
+    // TODO: use core:flags.parse_or_exit
     // cwd
     cwd = filepath.dir(caller_loc.file_path)
     os2.set_working_directory(cwd)
@@ -45,8 +50,11 @@ read_args :: proc(args: ^$T, check_args := true, caller_loc := #caller_location)
     linux   = ODIN_OS == .Linux
     macos   = ODIN_OS == .Darwin
     platform = "macos" if macos else strings.to_lower(reflect.enum_string(ODIN_OS))
+    exe_ext := windows ? ".exe" : ""
+    dll_ext := windows ? ".dll" : linux ? ".so" : macos ? ".dylib" : ""
     // args
     // TODO: strip arg prefixes like '-', '--', '/',
+    // TODO: consider using core:flags
     cli_args = os2.args[1:]
     if check_args { validate_args(args, cli_args) }
     set_fields_true(args, cli_args)

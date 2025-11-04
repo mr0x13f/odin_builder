@@ -40,18 +40,20 @@ main :: proc() {
     if count(debug, release) != 1 {
         error("Wrong number of build modes, expected 'debug' OR 'release'") }
 
+    // Info
+    app_name := "hellope"
+    odin_main_pkg := "hellope"
+    odin_main_dir := "src"
+    build_dir := "build"
+
     // Prepare Build
     build_mode := debug ? "debug" : release ? "release" : ""
     build_name := fmt.aprintf("%s %s", strings.to_pascal_case(platform), strings.to_pascal_case(build_mode))
     fmt.printfln("[%s build]", build_name)
     exe_ext := windows ? ".exe" : ""
-    build_dir := "./build"
     out_dir := filepath.join({ build_dir, build_mode })
     
     // Build flags
-    app_name := "hellope"
-    odin_main_dir := "src"
-    odin_main_pkg := "hellope"
     odin_flags := make([dynamic]string)
     odin_out: string
 
@@ -81,7 +83,7 @@ main :: proc() {
         build_success := call({ "odin", "build", odin_main_dir }, odin_flags[:] )
 
         if build_success {
-            fmt.printfln(FG_GREEN + "%s build created in " + FG_CYAN + "%s" + os2.Path_Separator_String  +  RESET, build_name, out_dir)
+            fmt.printfln(FG_GREEN + "%s build created in " + FG_CYAN + "%s" + os2.Path_Separator_String + RESET, build_name, out_dir)
         } else {
             fmt.printfln(FG_RED + "%s build failed" + RESET, build_name)
             if !watch { exit(-1) }
