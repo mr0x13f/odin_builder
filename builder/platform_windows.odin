@@ -14,7 +14,7 @@ CHANGE_NOTIFICATION_FILTER :: windows.FILE_NOTIFY_CHANGE_FILE_NAME |
 wait_for_change :: proc(dir: string) {
     dir_abs_w := windows.utf8_to_wstring(to_abs_path(dir), context.temp_allocator)
 
-    notification := windows.FindFirstChangeNotificationW(dir_abs_w, true, CHANGE_NOTIFICATION_FILTER)
+    notification := windows.FindFirstChangeNotificationW(transmute([^]u16)dir_abs_w, true, CHANGE_NOTIFICATION_FILTER)
     windows.WaitForSingleObject(notification, windows.INFINITE)
     windows.FindCloseChangeNotification(notification)
 
