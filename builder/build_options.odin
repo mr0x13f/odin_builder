@@ -91,6 +91,9 @@ Build_Options :: struct {
     // Ignores warning messages.
     ignore_warnings: bool,
 
+    // Specifies the default behaviour for integer division by zero.
+    integer_division_by_zero: Build_Integer_Division_By_Zero_Options,
+
     // Prints the error messages as json to stderr.
     json_errors: bool,
 
@@ -177,6 +180,9 @@ Build_Options :: struct {
 
     // Shows an overview of all the #config/#defined usages in the project.
     show_defineables: bool,
+
+    // Silence warning/error if a -define doesn't have at least one #config/#defined usage.
+    ignore_unused_defineables: bool,
 
     // Prints the whole command and arguments for calls to external tools like linker and assembler.
     show_system_calls: bool,
@@ -307,10 +313,23 @@ Build_Export_Timings_Options :: enum {
     Csv,
 }
 
+Build_Integer_Division_By_Zero_Options :: enum {
+    Default,
+    // Trap on division/modulo/remainder by zero
+    Trap,
+    // x/0 == 0 and x%0 == x and x%%0 == x
+    Zero,
+    // x/0 == x and x%0 == 0 and x%%0 == 0
+    Self,
+    // x/0 == ~T(0) and x%0 == x and x%%0 == x
+    All_Bits,
+}
+
 Build_Linker_Options :: enum {
     Default,
     Lld,
     Radlink,
+    Mold,
 }
 
 Build_Optimization_Options :: enum {
