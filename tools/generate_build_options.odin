@@ -163,6 +163,8 @@ main :: proc() {
     fmt.wprint(out_writer, strings.to_string(build_options_struct_builder))
     fmt.wprint(out_writer, strings.to_string(other_types_builder))
 
+    fmt.printfln("Successfully wrote to %s", out_path)
+
 }
 
 peek_line :: proc() -> string {
