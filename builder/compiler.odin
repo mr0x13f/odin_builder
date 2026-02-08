@@ -2,7 +2,6 @@ package builder
 
 import "core:mem"
 import "core:strings"
-import "core:flags"
 import "core:path/filepath"
 import "core:fmt"
 import "core:reflect"

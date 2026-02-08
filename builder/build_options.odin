@@ -108,6 +108,10 @@ Build_Options :: struct {
     // Specify the linker to use.
     linker: Build_Linker_Options,
 
+    // States that the project is to be build with link-time optimizations.
+    // This also enables '-use-separate-modules' (if not already set) and `-linker:lld
+    lto: Build_Lto_Options,
+
     // Sets the maximum number of errors that can be displayed before the compiler terminates.
     // Must be an integer >0.
     // If not set, the default max error count is 36.
@@ -215,6 +219,10 @@ Build_Options :: struct {
     target_features: []string,
 
     // Sets the target for the executable to be built in.
+    // Examples:
+    // 	-target:linux_amd64
+    // 	-target:windows_amd64
+    // 	-target:"?" for a list
     target: string,
 
     // Prints a terse error message without showing the code on that line and the location in that line.
@@ -330,6 +338,12 @@ Build_Linker_Options :: enum {
     Lld,
     Radlink,
     Mold,
+}
+
+Build_Lto_Options :: enum {
+    Default,
+    Thin,
+    Thin_Files,
 }
 
 Build_Optimization_Options :: enum {
