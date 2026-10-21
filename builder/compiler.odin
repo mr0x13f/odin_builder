@@ -33,7 +33,7 @@ build :: proc {
 
 build_with_flags :: proc(main_dir: string, out: string, build_mode: Build_Mode = .Executable, flags: ..string) -> (success: bool) {
     // Ensure dir exists
-    out_dir := filepath.dir(out, context.temp_allocator)
+    out_dir := filepath.dir(out)
     mkdir(out_dir)
 
     // Flags

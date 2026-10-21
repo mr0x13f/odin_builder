@@ -5,7 +5,7 @@ import "core:io"
 import "core:strings"
 import "core:fmt"
 import "core:path/filepath"
-import "core:os/os2"
+import "core:os"
 
 // $ odin run tools/generate_build_options.odin -file
 
@@ -41,7 +41,7 @@ main :: proc() {
 
     // Read usage
     command := []string { "odin", "build", "--help" }
-    _, usage, _ := os2.process_exec({ command = command, }, context.allocator) or_else
+    _, usage, _ := os.process_exec({ command = command, }, context.allocator) or_else
         panic("Failed to start odin")
     usage_lines = strings.split_lines(string(usage))
 
@@ -152,11 +152,11 @@ main :: proc() {
 
     // Write output
     out_path := "builder/build_options.odin"
-    out_path_abs := filepath.join({ filepath.dir(os2.args[0]), out_path  })
-    out_file := os2.open(out_path_abs, { .Create, .Write, .Trunc }) or_else
+    out_path_abs := filepath.join({ filepath.dir(os.args[0]), out_path  }, context.temp_allocator) or_else panic("Allocation error")
+    out_file := os.open(out_path_abs, { .Create, .Write, .Trunc }) or_else
         panic("Failed to open output file")
-    defer os2.close(out_file)
-    out_writer := os2.to_writer(out_file)
+    defer os.close(out_file)
+    out_writer := os.to_writer(out_file)
 
     fmt.wprintln(out_writer, "package builder")
     fmt.wprintln(out_writer)

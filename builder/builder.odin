@@ -1,11 +1,12 @@
 package builder
 
+import "base:runtime"
 import "core:time"
 import "core:terminal/ansi"
 import "core:slice"
 import "core:reflect"
 import "core:fmt"
-import "core:os/os2"
+import "core:os"
 import "core:path/filepath"
 
 RESET      :: ansi.CSI + ansi.RESET      + ansi.SGR
@@ -55,11 +56,11 @@ read_args :: proc(args: ^$T, check_args := true, caller_loc := #caller_location)
     // TODO: use core:flags.parse_or_exit
     // cwd
     cwd = filepath.dir(caller_loc.file_path)
-    os2.set_working_directory(cwd)
+    os.set_working_directory(cwd)
     // args
     // TODO: strip arg prefixes like '-', '--', '/',
     // TODO: consider using core:flags
-    cli_args = os2.args[1:]
+    cli_args = os.args[1:]
     if check_args { validate_args(args, cli_args) }
     set_fields_true(args, cli_args)
 }
@@ -122,13 +123,19 @@ count :: proc(conditions: ..bool) -> (count: int) {
     return
 }
 
+// Join all elems with the system's path separator and normalize the result.
+// Works the same as filepath.join but with an optional allocator error.
+join :: proc(elems: ..string) -> string {
+	return filepath.join(elems, context.allocator) or_else panic("Allocator error")
+}
+
 // Exit immediately and clean up
 exit :: proc(code: i32 = 0) -> ! {
-    exe_path := os2.args[0]
-    // Using os2.exit() causes `odin run` to not be able to remove the temporary exe it creates
+    exe_path := os.args[0]
+    // Using os.exit() causes `odin run` to not be able to remove the temporary exe it creates
     // so we manually clean it up
     remove_file_delayed(exe_path)
-    os2.exit(-1)
+    os.exit(-1)
 }
 
 // Show a formatted error message and exit
@@ -154,7 +161,8 @@ print_usage :: proc(args: ^$T) {
 
 // Ensures a directory (and its parents) exist
 mkdir :: proc(parts: ..string) {
-    os2.make_directory_all(filepath.join(parts, context.temp_allocator))
+    path := filepath.join(parts, context.temp_allocator) or_else panic("Allocator error")
+    os.make_directory_all(path)
 }
 
 // Create a child process and wait for it to complete. Its stdout and stderr are forwarded to the console.
@@ -163,18 +171,18 @@ call :: proc(command: ..[]string, environment: []string = nil) -> (success: bool
     command_parts := slice.concatenate(command, context.temp_allocator)
     executable := command[0][0]
 
-    process, err := os2.process_start({
+    process, err := os.process_start({
         command     = command_parts,
         working_dir = cwd,
         env         = environment,
-        stderr      = os2.stderr,
-        stdout      = os2.stdout,
+        stderr      = os.stderr,
+        stdout      = os.stdout,
         stdin       = nil,
     })
-    if err != nil { error("Error running %s: %s", executable, os2.error_string(err)) }
+    if err != nil { error("Error running %s: %s", executable, os.error_string(err)) }
 
-    state, wait_err := os2.process_wait(process)
-    if wait_err != nil { error("Error waiting for %s to complete: %s", executable, os2.error_string(wait_err)) }
+    state, wait_err := os.process_wait(process)
+    if wait_err != nil { error("Error waiting for %s to complete: %s", executable, os.error_string(wait_err)) }
 
     success = state.exit_code == 0
     if !success { fmt.printfln(FG_RED + "Process %s exited with code: %i" + RESET, executable, state.exit_code) }

@@ -38,7 +38,7 @@ remove_file_delayed :: proc(path: string) {
 
 @(private="file")
 to_abs_path :: proc(path: string) -> string {
-    abs_path, abs_ok := filepath.abs(path, context.temp_allocator)
-    if !abs_ok { error("Failed to make path absolute: %s", path) }
+    abs_path, err := filepath.abs(path, context.temp_allocator)
+    if err != nil { error("Failed to make path absolute: %s", path) }
     return abs_path
 }

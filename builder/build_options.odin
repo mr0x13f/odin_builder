@@ -6,10 +6,21 @@ package builder
 // Odin build options, corresponds to usage of `odin build`
 Build_Options :: struct {
 
-    // Defines a library collection used for imports.
+    // Disables numerous features. List of disabled features:
+    // 	`map` types
+    // 	128-bit integer types
+    // 	runtime type information (-no-rtti)
+    // 	non-constant global variables (-disable-non-constant-globals)
+    // 	@(init) @(fini) (-disable-init-fini)
+    // 	Anything Objective-C related
+    // 	The default paths to the library collections 'core' and 'vendor'
+    bedrock: bool,
+
+    // Defines a library collection used for imports and foreign imports.
     // Example: -collection:shared=dir/to/shared
     // Usage in Code:
     // 	import "shared:foo"
+    // 	foreign import lib "shared:libfoo.a"
     collections: map[string]string `flag:"collection"`,
 
     // Add a custom attribute which will be ignored if it is unknown.
@@ -20,7 +31,7 @@ Build_Options :: struct {
     // 	-custom-attribute:my_tag -custom-attribute:the_other_thing
     custom_attributes: []string `flag:"custom-attribute"`,
 
-    // Enables debug information, and defines the global constant ODIN_DEBUG to be 'true'.
+    // Enables debug information, and defines the global constant ODIN_DEBUG to be 'true'. Sets -o:none by default.
     debug: bool,
 
     // Sets the default allocator to be the nil_allocator, an allocator which does nothing.
@@ -38,11 +49,17 @@ Build_Options :: struct {
     // Disables the code generation of the built-in run-time 'assert' procedure, and defines the global constant ODIN_DISABLE_ASSERT to be 'true'.
     disable_assert: bool,
 
+    // Disables the ability to use @(init) and @(fini) procedures
+    disable_init_fini: bool,
+
     // Disables red zone on a supported freestanding target.
     disable_red_zone: bool,
 
     // Disallows the 'do' keyword in the project.
     disallow_do: bool,
+
+    // Disables any global variables which are not initialized with global constants
+    disable_non_constant_globals: bool,
 
     // Uses dynamic map calls to minimize code generation at the cost of runtime execution.
     dynamic_map_calls: bool,
@@ -105,6 +122,13 @@ Build_Options :: struct {
     // the resulting program, and this option is not applicable.
     keep_executable: bool,
 
+    // Emits lifetime markers for named locals, so that locals from
+    // non-overlapping scopes may reuse stack.
+    // Requires '-o:size' or above; no effect with '-sanitize:address'.
+    // Warning: this applies to every package in the build; using the address
+    // of a local after the local's declaring scope ended can miscompile.
+    lifetime_markers: bool,
+
     // Specify the linker to use.
     linker: Build_Linker_Options,
 
@@ -116,6 +140,11 @@ Build_Options :: struct {
     // Must be an integer >0.
     // If not set, the default max error count is 36.
     max_error_count: int,
+
+    // Sets the maximum number of suggestions the compiler provides.
+    // Must be an integer >0.
+    // If not set, the default limit is 10.
+    did_you_mean_limit: int,
 
     // Specifies the specific micro-architecture for the build in a string.
     // Examples:
@@ -136,6 +165,10 @@ Build_Options :: struct {
     // Disables bounds checking program wide.
     no_bounds_check: bool,
 
+    // Constrains 'typeid' values to 63 bits to avoid an OMG JIT crash in WebKit when running WASM builds.
+    // Only needed for 'js_wasm32'/'js_wasm64p32' targets run in Safari/WebKit. See: https://github.com/odin-lang/Odin/issues/6810
+    webkit_switch_workaround: bool,
+
     // Disables automatic linking with the C Run Time.
     no_crt: bool,
 
@@ -155,7 +188,7 @@ Build_Options :: struct {
     no_type_assert: bool,
 
     // Sets the optimization mode for compilation.
-    // The default is -o:minimal.
+    // The default is -o:minimal. If -debug is set, the default is -o:none.
     optimization: Build_Optimization_Options `flag:"o"`,
 
     // Processes the file and procedure strings, and line and column numbers, stored with a 'runtime.Source_Code_Location' value.
@@ -172,6 +205,9 @@ Build_Options :: struct {
 
     // Specifies the reloc mode.
     reloc_mode: Build_Reloc_Mode_Options,
+
+    // Specifies the stack protector.
+    stack_protector: Build_Stack_Protector_Options,
 
     // [Windows only]
     // Defines the resource file for the executable.
@@ -191,6 +227,9 @@ Build_Options :: struct {
     // Prints the whole command and arguments for calls to external tools like linker and assembler.
     show_system_calls: bool,
 
+    // Shows dot graph text format of the import graph of a project.
+    show_import_graph: bool,
+
     // Shows basic overview of the timings of different stages within the compiler in milliseconds.
     show_timings: bool,
 
@@ -200,6 +239,10 @@ Build_Options :: struct {
     // This enforces parts of same style as the Odin compiler, prefer '-vet-style -vet-semicolon' if you do not want to match it exactly.
     strict_style: bool,
 
+    // Sets which packages by name will be checked against with '-strict-style'.
+    // Files with specific +vet tags will not be ignored if they are not in the packages set.
+    strict_style_packages: []string,
+
     // Makes @(enable_target_features="...") behave the same way as @(require_target_features="...").
     // This enforces that all generated code uses features supported by the combination of -target, -microarch, and -target-features.
     strict_target_features: bool,
@@ -208,7 +251,7 @@ Build_Options :: struct {
     // Defines the subsystem for the application.
     subsystem: Build_Subsystem_Options,
 
-    // [Darwin and Linux only]
+    // [Darwin, Linux and Freestanding ARM32 only]
     subtarget: Build_Subtarget_Options,
 
     // Specifies CPU features to enable on top of the enabled features implied by -microarch.
@@ -248,6 +291,7 @@ Build_Options :: struct {
     // 	-vet-unused-imports
     // 	-vet-shadowing
     // 	-vet-using-stmt
+    // 	-vet-when-shadowing
     vet: bool,
 
     // Errs on casting a value to its own type or using `transmute` rather than `cast`.
@@ -291,6 +335,9 @@ Build_Options :: struct {
     // Checks for the use of 'using' as a statement.
     // 'using' is considered bad practice outside of immediate refactoring.
     vet_using_stmt: bool,
+
+    // Checks for declarations within a global 'when' that shadow a builtin or package-level name.
+    vet_when_shadowing: bool,
 
     // Treats warning messages as error messages.
     warnings_as_errors: bool,
@@ -336,13 +383,16 @@ Build_Integer_Division_By_Zero_Options :: enum {
 Build_Linker_Options :: enum {
     Default,
     Lld,
+    Msvc,
     Radlink,
     Mold,
 }
 
 Build_Lto_Options :: enum {
     Default,
+    // (one module per package)
     Thin,
+    // (one module file)
     Thin_Files,
 }
 
@@ -371,6 +421,14 @@ Build_Reloc_Mode_Options :: enum {
     Dynamic_No_Pic,
 }
 
+Build_Stack_Protector_Options :: enum {
+    Default,
+    None,
+    Base,
+    All,
+    Strong,
+}
+
 Build_Sanitize_Options :: enum {
     Default,
     Address,
@@ -389,5 +447,6 @@ Build_Subtarget_Options :: enum {
     Iphone,
     Iphonesimulator,
     Android,
+    Playdate,
 }
 
