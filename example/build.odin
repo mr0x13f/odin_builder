@@ -33,8 +33,10 @@ main :: proc() {
     using args, builder
     read_args(&args)
 
-    if help || len(cli_args) == 0 {
+    if len(cli_args) == 0 {
         print_usage(&args); exit(1) }
+    if help {
+        print_usage(&args); exit() }
 
     if count(debug, release) != 1 {
         error("Wrong number of build modes, expected 'debug' OR 'release'") }
@@ -72,7 +74,9 @@ main :: proc() {
     }
 
     if asan { build_options.sanitize = .Address }
-    if vet  { build_options.vet_unused_procedures = true }
+
+    build_options.vet_packages = { odin_main_pkg }
+    // Default vetting, only omitted with 'novet'
     if !novet {
         build_options.vet_cast = true
         build_options.vet_semicolon = true
@@ -82,9 +86,12 @@ main :: proc() {
         build_options.vet_unused_variables = true
         build_options.vet_using_param = true
         build_options.vet_using_stmt = true
+        build_options.vet_when_shadowing = true
     }
-
-    build_options.vet_packages = { odin_main_pkg }
+    // Additional vetting with 'vet'
+    if vet  {
+        build_options.vet_unused_procedures = true
+    }
 
     // Compile
     for watch_dir(watch, odin_main_dir) {

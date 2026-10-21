@@ -130,12 +130,12 @@ join :: proc(elems: ..string) -> string {
 }
 
 // Exit immediately and clean up
-exit :: proc(code: i32 = 0) -> ! {
+exit :: proc(code: int = 0) -> ! {
     exe_path := os.args[0]
     // Using os.exit() causes `odin run` to not be able to remove the temporary exe it creates
     // so we manually clean it up
     remove_file_delayed(exe_path)
-    os.exit(-1)
+    os.exit(code)
 }
 
 // Show a formatted error message and exit
