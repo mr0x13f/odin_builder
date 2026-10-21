@@ -62,7 +62,7 @@ build_with_options :: proc(main_dir: string, out: string, build_mode: Build_Mode
             case type_info_of(bool):
                 append(&build_flags, fmt.tprintf("-%s", flag_name))
             case type_info_of(string):
-                append(&build_flags, fmt.tprintf("-%s:%s", flag_name, cast(^string)field_ptr))
+                append(&build_flags, fmt.tprintf("-%s:%s", flag_name, (cast(^string)field_ptr)^))
             case type_info_of(int):
                 append(&build_flags, fmt.tprintf("-%s:%i", flag_name, cast(^int)field_ptr))
             case type_info_of([]string):
