@@ -8,6 +8,6 @@ wait_for_change :: proc(dir: string) {
     // TODO:
 }
 
-remove_file_delayed :: proc(path: string, delay: time.Duration) {
+remove_file_delayed :: proc(path: string) {
     // TODO:
 }
