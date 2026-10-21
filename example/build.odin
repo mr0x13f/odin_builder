@@ -76,7 +76,6 @@ main :: proc() {
     if asan { build_options.sanitize = .Address }
 
     build_options.vet_packages = { odin_main_pkg }
-    // Default vetting, only omitted with 'novet'
     if !novet {
         build_options.vet_cast = true
         build_options.vet_semicolon = true
@@ -88,7 +87,6 @@ main :: proc() {
         build_options.vet_using_stmt = true
         build_options.vet_when_shadowing = true
     }
-    // Additional vetting with 'vet'
     if vet  {
         build_options.vet_unused_procedures = true
     }
