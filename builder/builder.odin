@@ -28,11 +28,11 @@ NATIVE_WINDOWS :: ODIN_OS == .Windows
 NATIVE_LINUX   :: ODIN_OS == .Linux
 NATIVE_MACOS   :: ODIN_OS == .Darwin
 
-WINDOWS_EXTENSIONS :: Extensions { ".exe",  ".dll",   ".lib", ".obj" }
-LINUX_EXTENSIONS   :: Extensions { "",      ".so",    ".a",   ".o"   }
-MACOS_EXTENSIONS   :: Extensions { "",      ".dylib", ".a",   ".o"   }
-WASM_EXTENSIONS    :: Extensions { ".wasm", ".wasm",  ".a",   ".o"   }
-MINGW_EXTENSIONS   :: Extensions { ".exe",  ".dll",   ".a",   ".o"   }
+WINDOWS_EXTENSIONS :: Extensions { ".exe",  ".dll",   ".lib",    ".obj"    }
+LINUX_EXTENSIONS   :: Extensions { "",      ".so",    ".a",      ".o"      }
+MACOS_EXTENSIONS   :: Extensions { "",      ".dylib", ".a",      ".o"      }
+WASM_EXTENSIONS    :: Extensions { ".wasm", ".wasm",  ".wasm.a", ".wasm.o" }
+MINGW_EXTENSIONS   :: Extensions { ".exe",  ".dll",   ".a",      ".o"      }
 
 EXTENSION_ASSEMBLY :: ".s"
 EXTENSION_LLVM_IR :: ".ll"
