@@ -1,10 +1,10 @@
 package builder
 
-// Generated with tools/generate_build_options.odin
+// Generated with tools/generate_odin_build_options.odin
 
 
 // Odin build options, corresponds to usage of `odin build`
-Build_Options :: struct {
+Odin_Build_Options :: struct {
 
     // Disables numerous features. List of disabled features:
     // 	`map` types
@@ -260,13 +260,6 @@ Build_Options :: struct {
     // 	-target-features:"sse2,aes"
     // 	-target-features:"?" for a list
     target_features: []string,
-
-    // Sets the target for the executable to be built in.
-    // Examples:
-    // 	-target:linux_amd64
-    // 	-target:windows_amd64
-    // 	-target:"?" for a list
-    target: string,
 
     // Prints a terse error message without showing the code on that line and the location in that line.
     terse_errors: bool,

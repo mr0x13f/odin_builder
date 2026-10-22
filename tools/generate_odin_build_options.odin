@@ -1,4 +1,5 @@
 #+feature dynamic-literals
+#+private file
 package tools
 
 import "core:io"
@@ -14,6 +15,8 @@ import "core:os"
 // based on the output of $ odin build --help
 // Will output to builder/build_options.odin
 
+OUT_PATH :: "builder/odin_build_options.odin"
+PACKAGE_NAME :: "builder"
 
 rename_flags := map[string]string {
     "o"                = "optimization",
@@ -31,29 +34,31 @@ exclude_flags := map[string]bool {
     "build_mode" = true,
     "lld"        = true,
     "radlink"    = true,
+    "target"     = true,
 }
 
-usage_lines: []string
+stdout_lines: []string
 lines_read: int
 reached_end: bool
 
+@private
 main :: proc() {
 
     // Read usage
     command := []string { "odin", "build", "--help" }
-    _, usage, _ := os.process_exec({ command = command, }, context.allocator) or_else
+    _, stdout, _ := os.process_exec({ command = command, }, context.allocator) or_else
         panic("Failed to start odin")
-    usage_lines = strings.split_lines(string(usage))
+    stdout_lines = strings.split_lines(string(stdout))
 
     // Generate code
     build_options_struct_builder := strings.builder_make()
     other_types_builder := strings.builder_make()
 
-    fmt.sbprintln(&build_options_struct_builder, "// Generated with tools/generate_build_options.odin")
+    fmt.sbprintln(&build_options_struct_builder, "// Generated with tools/generate_odin_build_options.odin")
     fmt.sbprintln(&build_options_struct_builder)
     fmt.sbprintln(&build_options_struct_builder)
     fmt.sbprintln(&build_options_struct_builder, "// Odin build options, corresponds to usage of `odin build`")
-    fmt.sbprintln(&build_options_struct_builder, "Build_Options :: struct {")
+    fmt.sbprintln(&build_options_struct_builder, "Odin_Build_Options :: struct {")
     fmt.sbprintln(&build_options_struct_builder)
     skip_lines_until_after("\tFlags")
     skip_lines_until_prefix("\t-")
@@ -151,30 +156,29 @@ main :: proc() {
     fmt.sbprintln(&build_options_struct_builder)
 
     // Write output
-    out_path := "builder/build_options.odin"
-    out_path_abs := filepath.join({ filepath.dir(os.args[0]), out_path  }, context.temp_allocator) or_else panic("Allocation error")
+    out_path_abs := filepath.join({ filepath.dir(os.args[0]), OUT_PATH  }, context.temp_allocator) or_else panic("Allocation error")
     out_file := os.open(out_path_abs, { .Create, .Write, .Trunc }) or_else
         panic("Failed to open output file")
     defer os.close(out_file)
     out_writer := os.to_writer(out_file)
 
-    fmt.wprintln(out_writer, "package builder")
+    fmt.wprintln(out_writer, "package " + PACKAGE_NAME)
     fmt.wprintln(out_writer)
     fmt.wprint(out_writer, strings.to_string(build_options_struct_builder))
     fmt.wprint(out_writer, strings.to_string(other_types_builder))
 
-    fmt.printfln("Successfully wrote to %s", out_path)
+    fmt.println("Successfully wrote to " + OUT_PATH)
 
 }
 
 peek_line :: proc() -> string {
-    return usage_lines[lines_read]
+    return stdout_lines[lines_read]
 }
 
 consume_line :: proc() -> (line: string) {
-    line = usage_lines[lines_read]
+    line = stdout_lines[lines_read]
     lines_read += 1
-    reached_end = lines_read >= len(usage_lines)
+    reached_end = lines_read >= len(stdout_lines)
     return
 }
 
@@ -196,7 +200,7 @@ consume_until_prefix_or_empty :: proc(prefixes: ..string) -> []string {
         if has_any_prefix(line, ..prefixes) { break }
         consume_line()
     }
-    return usage_lines[start_idx:lines_read]
+    return stdout_lines[start_idx:lines_read]
 }
 
 has_any_prefix :: proc(str: string, prefixes: ..string) -> bool {

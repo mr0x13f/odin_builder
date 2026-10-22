@@ -20,8 +20,8 @@ import "../builder"
 */
 
 args: struct {
-    debug:   bool "Debug build mode",
-    release: bool "Release build mode",
+    debug:   bool "Debug build config",
+    release: bool "Release build config",
     watch:   bool "Watch for changes",
     vet:     bool "Extra vetting",
     novet:   bool "No vetting",
@@ -38,8 +38,7 @@ main :: proc() {
     if help {
         print_usage(&args); exit() }
 
-    if count(debug, release) != 1 {
-        error("Wrong number of build modes, expected 'debug' OR 'release'") }
+    expect_exactly_one_of(debug, release)
 
     // Info
     app_name      := "hellope"
@@ -48,20 +47,23 @@ main :: proc() {
     build_dir     := "build"
 
     // Prepare Build
-    build_mode := debug ? "debug" : release ? "release" : ""
-    build_name := fmt.aprintf("%s %s", strings.to_pascal_case(PLATFORM), strings.to_pascal_case(build_mode))
+    target := NATIVE_PLATFORM
+    odin_target := Odin_Build_Targets.Native
+    build_config := debug ? "debug" : release ? "release" : ""
+    build_name := fmt.aprintf("%s %s", strings.to_pascal_case(target), strings.to_pascal_case(build_config))
+    out_dir := join(build_dir, fmt.aprintf("%s_%s", target, build_config))
+
     fmt.printfln("[%s build]", build_name)
-    out_dir := join(build_dir, build_mode)
     
     // Build flags
     odin_out: string
-    build_options: Build_Options
+    build_options: Odin_Build_Options
 
     if debug {
-        odin_out = join(out_dir, fmt.aprintf("%s_%s_%s", app_name, PLATFORM, build_mode))
+        odin_out = join(out_dir, app_name)
         build_options.debug = true
         build_options.optimization = .Minimal
-        if WINDOWS {
+        if target == WINDOWS {
             build_options.subsystem = .Console
             build_options.linker = .Radlink
         } 
@@ -70,7 +72,9 @@ main :: proc() {
         odin_out = join(out_dir, app_name)
         build_options.disable_assert = true
         build_options.optimization = .Speed
-        if WINDOWS { build_options.subsystem = .Windows }
+        if target == WINDOWS {
+            build_options.subsystem = .Windows
+        }
     }
 
     if asan { build_options.sanitize = .Address }
@@ -95,13 +99,13 @@ main :: proc() {
     for watch_dir(watch, odin_main_dir) {
         
         fmt.printfln("Building %s...", app_name)
-        build_success := build(odin_main_dir, odin_out, .Executable, build_options)
+        build_success := odin_build(odin_main_dir, odin_out, .Executable, odin_target, build_options)
 
         if build_success {
             fmt.printfln(FG_GREEN + "%s build created in " + FG_CYAN + "%s" + os.Path_Separator_String + RESET, build_name, out_dir)
         } else {
             fmt.printfln(FG_RED + "%s build failed" + RESET, build_name)
-            if !watch { exit(-1) }
+            if !watch { exit(1) }
         }
     }
 }

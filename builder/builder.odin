@@ -1,5 +1,6 @@
 package builder
 
+import "core:strings"
 import "base:runtime"
 import "core:time"
 import "core:terminal/ansi"
@@ -19,35 +20,47 @@ FG_MAGENTA :: ansi.CSI + ansi.FG_MAGENTA + ansi.SGR
 FG_CYAN    :: ansi.CSI + ansi.FG_CYAN    + ansi.SGR
 FG_WHITE   :: ansi.CSI + ansi.FG_WHITE   + ansi.SGR
 
-WINDOWS :: ODIN_OS == .Windows
-LINUX   :: ODIN_OS == .Linux
-MACOS   :: ODIN_OS == .Darwin
+WINDOWS :: "windows"
+LINUX   :: "linux"
+MACOS   :: "macos"
 
-when WINDOWS {
-    PLATFORM :: "windows"
-    EXE_EXT :: ".exe"
-    DLL_EXT :: ".dll"
-    LIB_EXT :: ".lib"
-    OBJ_EXT :: ".obj"
-} else {
-    when LINUX {
-        PLATFORM :: "linux"
-        DLL_EXT :: ".so"
-    }
-    when MACOS {
-        PLATFORM :: "macos"
-        DLL_EXT :: ".dylib"
-    }
-    EXE_EXT :: ""
-    LIB_EXT :: ".a"
-    OBJ_EXT :: ".o"
+NATIVE_WINDOWS :: ODIN_OS == .Windows
+NATIVE_LINUX   :: ODIN_OS == .Linux
+NATIVE_MACOS   :: ODIN_OS == .Darwin
+
+WINDOWS_EXTENSIONS :: Extensions { ".exe",  ".dll",   ".lib", ".obj" }
+LINUX_EXTENSIONS   :: Extensions { "",      ".so",    ".a",   ".o"   }
+MACOS_EXTENSIONS   :: Extensions { "",      ".dylib", ".a",   ".o"   }
+WASM_EXTENSIONS    :: Extensions { ".wasm", ".wasm",  ".a",   ".o"   }
+MINGW_EXTENSIONS   :: Extensions { ".exe",  ".dll",   ".a",   ".o"   }
+
+EXTENSION_ASSEMBLY :: ".s"
+EXTENSION_LLVM_IR :: ".ll"
+
+when NATIVE_WINDOWS {
+    NATIVE_PLATFORM :: WINDOWS
+    NATIVE_EXTENSIONS :: WINDOWS_EXTENSIONS
+}
+when NATIVE_LINUX {
+    NATIVE_PLATFORM :: LINUX
+    NATIVE_EXTENSIONS :: LINUX_EXTENSIONS
+}
+when NATIVE_MACOS {
+    NATIVE_PLATFORM :: MACOS
+    NATIVE_EXTENSIONS :: MACOS_EXTENSIONS
+}
+
+Extensions :: struct {
+    executable: string,
+    dynamic_library: string,
+    static_library: string,
+    object: string,
 }
 
 // Working directory, same as the directory of the build script
 cwd: string
 // Command line arguments without prefix (-, --, /)
 cli_args: []string
-// Name of the current platform: `"windows"` or `"linux"` or `"macos"`
 
 // Uses the command line arguments to set the value of the fields in the supplied struct by their field names.
 // Also sets the working directory to the location of the calling file.
@@ -101,7 +114,7 @@ validate_args :: proc(args_struct: ^$T, cli_args: []string) {
         if !slice.contains(valid_arg_names, arg) {
             fmt.printfln(FG_RED + "Invalid argument: %s" + RESET, arg)
             print_usage(args_struct)
-            exit(-1)
+            exit(1)
         }
     }
 }
@@ -123,10 +136,14 @@ count :: proc(conditions: ..bool) -> (count: int) {
     return
 }
 
-// Join all elems with the system's path separator and normalize the result.
-// Works the same as filepath.join but with an optional allocator error.
-join :: proc(elems: ..string) -> string {
-	return filepath.join(elems, context.allocator) or_else panic("Allocator error")
+// Join all `elems` with the system's path separator and normalize the result.
+// Works the same as filepath.join except with #optional_allocator_error.
+//
+// *Allocates Using Provided Allocator*
+//
+// For example, `join({"/home", "foo", "bar.txt"})` will result in `"/home/foo/bar.txt"`.
+join :: proc(elems: ..string, allocator := context.allocator) -> (joined: string, err: runtime.Allocator_Error) #optional_allocator_error {
+	return filepath.join(elems, allocator)
 }
 
 // Exit immediately and clean up
@@ -144,7 +161,7 @@ error :: proc(format: string, args: ..any) -> ! {
     fmt.print("[ERROR] ")
     fmt.printf(format, ..args)
     fmt.print(RESET)
-    exit(-1)
+    exit(1)
 }
 
 // Prints a usage message to the console based on the provided args struct.
@@ -187,4 +204,21 @@ call :: proc(command: ..[]string, environment: []string = nil) -> (success: bool
     success = state.exit_code == 0
     if !success { fmt.printfln(FG_RED + "Process %s exited with code: %i" + RESET, executable, state.exit_code) }
     return
+}
+
+get_target_name :: proc (target: Odin_Build_Targets) -> string {
+    if (target == .Native) {
+        return NATIVE_PLATFORM
+    }
+    return reflect.enum_name_from_value(target) or_else panic("Bad target value")
+}
+
+// Verifies that only one of the given booleans is true, otherwise exits the program
+expect_exactly_one_of :: proc (flags: ..bool, call_expr := #caller_expression) {
+    if count(..flags) != 1 {
+        flags_start := strings.index(call_expr, "(") + 1
+        flags_end := strings.index(call_expr, ")")
+        flags_expr := call_expr[flags_start:flags_end]
+        error("Expected exactly ONE of: %s", flags_expr)
+    }
 }
