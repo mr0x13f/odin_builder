@@ -182,27 +182,37 @@ mkdir :: proc(parts: ..string) {
     os.make_directory_all(path)
 }
 
-// Create a child process and wait for it to complete. Its stdout and stderr are forwarded to the console.
-call :: proc(command: ..[]string, environment: []string = nil) -> (success: bool) {
+// Create a child process and wait for it to complete. Its stdout and stderr are forwarded to the console unless silent is set to true.
+call :: proc(command: ..[]string, environment: []string = nil, silent := false) -> (success: bool) {
 
     command_parts := slice.concatenate(command, context.temp_allocator)
     executable := command[0][0]
+    stderr := silent ? nil : os.stderr
+    stdout := silent ? nil : os.stdout
 
     process, err := os.process_start({
         command     = command_parts,
         working_dir = cwd,
         env         = environment,
-        stderr      = os.stderr,
-        stdout      = os.stdout,
+        stderr      = stderr,
+        stdout      = stdout,
         stdin       = nil,
     })
-    if err != nil { error("Error running %s: %s", executable, os.error_string(err)) }
+    if err != nil && !silent {
+        fmt.printfln(FG_RED + "Error running %s: %s", executable, os.error_string(err))
+        return false
+    }
 
     state, wait_err := os.process_wait(process)
-    if wait_err != nil { error("Error waiting for %s to complete: %s", executable, os.error_string(wait_err)) }
+    if wait_err != nil && !silent {
+        fmt.printfln(FG_RED + "Error waiting for %s to complete: %s", executable, os.error_string(wait_err))
+        return false
+    }
 
     success = state.exit_code == 0
-    if !success { fmt.printfln(FG_RED + "Process %s exited with code: %i" + RESET, executable, state.exit_code) }
+    if !success && !silent {
+        fmt.printfln(FG_RED + "Process %s exited with code: %i" + RESET, executable, state.exit_code)
+    }
     return
 }
 
