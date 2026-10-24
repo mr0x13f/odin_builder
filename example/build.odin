@@ -22,6 +22,7 @@ import "../builder"
 args: struct {
     debug:   bool "Debug build config",
     release: bool "Release build config",
+    run:     bool "Run after building",
     watch:   bool "Watch for changes",
     vet:     bool "Extra vetting",
     novet:   bool "No vetting",
@@ -39,6 +40,7 @@ main :: proc() {
         print_usage(&args); exit() }
 
     expect_exactly_one_of(debug, release)
+    if run && watch { error("Cannot run AND watch") }
 
     // Info
     app_name      := "hellope"
@@ -99,13 +101,20 @@ main :: proc() {
     for watch_dir(watch, odin_main_dir) {
         
         fmt.printfln("Building %s...", app_name)
-        build_success := odin_build(odin_main_dir, odin_out, .Executable, odin_target, build_options)
+        out_file, success := odin_build(odin_main_dir, odin_out, .Executable, odin_target, build_options)
 
-        if build_success {
+        if success {
             fmt.printfln(FG_GREEN + "%s build created in " + FG_CYAN + "%s" + os.Path_Separator_String + RESET, build_name, out_dir)
         } else {
             fmt.printfln(FG_RED + "%s build failed" + RESET, build_name)
-            if !watch { exit(1) }
         }
+
+        if success && run {
+            fmt.printfln("Running...")
+            fmt.println("================================================================================")
+            call({out_file}, interactive = true)
+        }
+        
+        if !success && !watch { exit(1) }
     }
 }

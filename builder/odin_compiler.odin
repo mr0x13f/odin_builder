@@ -37,13 +37,14 @@ odin_build_with_flags :: proc(
     build_mode: Odin_Build_Mode = .Executable,
     target: Odin_Build_Targets = .Native,
     flags: ..string
-) -> (success: bool) {
+) -> (out_file: string, success: bool) {
     // Ensure dir exists
     out_dir := filepath.dir(out_without_ext)
     mkdir(out_dir)
 
     // Flags
-    out_flag := fmt.tprintf("-out:%s%s", out_without_ext, get_extension_for_build_mode(build_mode, target))
+    out_file = fmt.tprintf("%s%s", out_without_ext, get_extension_for_build_mode(build_mode, target))
+    out_flag := fmt.tprintf("-out:%s", out_file)
     Build_Mode_Values := Build_Mode_Values
     build_mode_flag := fmt.tprintf("-build-mode:%s", Build_Mode_Values[build_mode])
     
@@ -53,7 +54,8 @@ odin_build_with_flags :: proc(
         target_flag = fmt.tprintf("-target:%s", strings.to_snake_case(target_name_ada, context.temp_allocator))
     }
 
-    return call({ "odin", "build", main_dir, out_flag, build_mode_flag, target_flag }, flags)
+    success = call({ "odin", "build", main_dir, out_flag, build_mode_flag, target_flag }, flags)
+    return
 }
 
 odin_build_with_options :: proc(
@@ -62,7 +64,7 @@ odin_build_with_options :: proc(
     build_mode: Odin_Build_Mode = .Executable,
     target: Odin_Build_Targets = .Native,
     options: Odin_Build_Options = {}
-) -> (success: bool) {
+) -> (out_file: string, success: bool) {
     build_flags := make([dynamic]string, context.temp_allocator)
     options := options
 

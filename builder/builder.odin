@@ -183,12 +183,13 @@ mkdir :: proc(parts: ..string) {
 }
 
 // Create a child process and wait for it to complete. Its stdout and stderr are forwarded to the console unless silent is set to true.
-call :: proc(command: ..[]string, environment: []string = nil, silent := false) -> (success: bool) {
+call :: proc(command: ..[]string, environment: []string = nil, silent := false, interactive := false) -> (success: bool) {
 
     command_parts := slice.concatenate(command, context.temp_allocator)
     executable := command[0][0]
     stderr := silent ? nil : os.stderr
     stdout := silent ? nil : os.stdout
+    stdin := interactive ? os.stdin : nil
 
     process, err := os.process_start({
         command     = command_parts,
@@ -196,7 +197,7 @@ call :: proc(command: ..[]string, environment: []string = nil, silent := false) 
         env         = environment,
         stderr      = stderr,
         stdout      = stdout,
-        stdin       = nil,
+        stdin       = stdin,
     })
     if err != nil && !silent {
         fmt.printfln(FG_RED + "Error running %s: %s", executable, os.error_string(err))
@@ -212,8 +213,10 @@ call :: proc(command: ..[]string, environment: []string = nil, silent := false) 
     success = state.exit_code == 0
     if !success && !silent {
         fmt.printfln(FG_RED + "Process %s exited with code: %i" + RESET, executable, state.exit_code)
+        return false
     }
-    return
+
+    return true
 }
 
 get_target_name :: proc (target: Odin_Build_Targets) -> string {
