@@ -1,5 +1,6 @@
 package builder
 
+import "core:path/slashpath"
 import "core:strings"
 import "base:runtime"
 import "core:time"
@@ -233,5 +234,15 @@ expect_exactly_one_of :: proc (flags: ..bool, call_expr := #caller_expression) {
         flags_end := strings.index(call_expr, ")")
         flags_expr := call_expr[flags_start:flags_end]
         error("Expected exactly ONE of: %s", flags_expr)
+    }
+}
+
+// Copies or overwrites a file from src_path to dst_path. Creates directories if necessary.
+// Exits if there is a failure.
+copy :: proc (dst_path: string, src_path: string) {
+    mkdir(filepath.dir(dst_path))
+    err := os.copy_file(dst_path, src_path) 
+    if err != nil {
+        error("Failed to copy file: %s", err)
     }
 }
