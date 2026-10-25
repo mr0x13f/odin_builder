@@ -246,3 +246,12 @@ copy :: proc (dst_path: string, src_path: string) {
         error("Failed to copy file: %s", err)
     }
 }
+
+// Deletes contents of directory and ensures the directory exists
+clear_dir :: proc(path: string) {
+    err := os.remove_all(path)
+    if err != nil && err != .Not_Exist {
+        error("Failed to clean %s: %s", path, err)
+    }
+    mkdir(path)
+}
