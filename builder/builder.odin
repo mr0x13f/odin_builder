@@ -265,3 +265,12 @@ clear_dir :: proc(path: string) {
     }
     mkdir(path)
 }
+
+// Copies directory contents into another directry
+copy_dir_contents :: proc(dst_dir: string, src_dir: string) {
+    mkdir(dst_dir)
+    err := os.copy_directory_all(dst_dir, src_dir)
+    if err != nil {
+        error("Failed to copy directory contents: %s", err)
+    }
+}
