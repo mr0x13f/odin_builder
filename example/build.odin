@@ -23,6 +23,7 @@ args: struct {
     debug:   bool "Debug build config",
     release: bool "Release build config",
     run:     bool "Run after building",
+    clean:   bool "Delete old build files",
     watch:   bool "Watch for changes",
     vet:     bool "Extra vetting",
     novet:   bool "No vetting",
@@ -96,6 +97,12 @@ main :: proc() {
     if vet  {
         build_options.vet_unused_procedures = true
     }
+
+    // Clean
+    if clean || release {
+        clear_dir(out_dir)
+    }
+    mkdir(out_dir)
 
     // Compile
     for watch_dir(watch, odin_main_dir) {
