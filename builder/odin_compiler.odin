@@ -33,17 +33,21 @@ odin_build :: proc {
 
 odin_build_with_flags :: proc(
     main_dir: string,
-    out_without_ext: string,
+    out: string,
     build_mode: Odin_Build_Mode = .Executable,
     target: Odin_Build_Targets = .Native,
     flags: ..string
 ) -> (out_file: string, success: bool) {
     // Ensure dir exists
-    out_dir := filepath.dir(out_without_ext)
+    out_dir := filepath.dir(out)
     mkdir(out_dir)
 
     // Flags
-    out_file = fmt.tprintf("%s%s", out_without_ext, get_extension_for_build_mode(build_mode, target))
+    out_file = out
+    expected_ext := get_extension_for_build_mode(build_mode, target)
+    if !strings.has_suffix(out_file, expected_ext) {
+        out_file = fmt.tprintf("%s%s", out, expected_ext)
+    }
     out_flag := fmt.tprintf("-out:%s", out_file)
     Build_Mode_Values := Build_Mode_Values
     build_mode_flag := fmt.tprintf("-build-mode:%s", Build_Mode_Values[build_mode])
