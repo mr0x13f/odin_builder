@@ -247,6 +247,16 @@ copy :: proc (dst_path: string, src_path: string) {
     }
 }
 
+// Moves/renames file from src_path to dst_path. Creates directories if necessary.
+// Exits if there is a failure.
+move :: proc (src_path: string, dst_path: string) {
+    mkdir(filepath.dir(dst_path))
+    err := os.rename(src_path, dst_path) 
+    if err != nil {
+        error("Failed to move file: %s", err)
+    }
+}
+
 // Deletes contents of directory and ensures the directory exists
 clear_dir :: proc(path: string) {
     err := os.remove_all(path)
