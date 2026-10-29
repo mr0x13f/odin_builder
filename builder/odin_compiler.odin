@@ -151,6 +151,6 @@ get_extension_for_build_mode :: proc(build_mode: Odin_Build_Mode, target: Odin_B
     return ""
 }
 
-append_extension :: proc(file_without_ext: string, build_mode: Odin_Build_Mode, target: Odin_Build_Targets, allocator := context.temp_allocator) -> string {
+append_extension :: proc(file_without_ext: string, build_mode: Odin_Build_Mode, target: Odin_Build_Targets, allocator := context.allocator) -> string {
     return strings.concatenate({file_without_ext, get_extension_for_build_mode(build_mode, target)}, allocator)
 }

@@ -68,7 +68,6 @@ main :: proc() {
         build_options.optimization = .Minimal
         if target == WINDOWS {
             build_options.subsystem = .Console
-            build_options.linker = .Radlink
         } 
     }
     if release {
