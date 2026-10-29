@@ -147,6 +147,11 @@ join :: proc(elems: ..string, allocator := context.allocator) -> (joined: string
 	return filepath.join(elems, allocator)
 }
 
+// Same as `join()` but using the temp allocator from the context.
+tjoin :: proc(elems: ..string) -> (joined: string, err: runtime.Allocator_Error) #optional_allocator_error {
+	return filepath.join(elems, context.temp_allocator)
+}
+
 // Exit immediately and clean up
 exit :: proc(code: int = 0) -> ! {
     exe_path := os.args[0]
